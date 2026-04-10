@@ -5,9 +5,10 @@ from torchvision import transforms
 import numpy as np
 import os
 
+
+test_mode = False
+
 # ## Data Pipeline / Data preparation
-
-
 
 # Questions before starting:
 # - What 2 datasets to use? - SkeView: Kimia 99, Kimia 216
@@ -19,9 +20,9 @@ import os
 #     - plt - matplotlib # showing images in a grid and stuff  [1]
 #     - PIL - Image [2]
 
-kimia99_original_dir = "data/kimia99_dataset/Kimia99-Original"
-kimia99_gt_dir = "data/kimia99_dataset/Kimia99-GT"
-kimia99_thumb_dir = "data/kimia99_dataset/Kimia99-Thumb"
+kimia99_original_dir = r"data\kimia99_dataset\Kimia99-Original"
+kimia99_gt_dir = r"data\kimia99_dataset\Kimia99-GT"
+kimia99_thumb_dir = r"data\kimia99_dataset\Kimia99-Thumb"
 
 
 # ### Access
@@ -84,7 +85,6 @@ kimia99 = Kimia99(kimia99_original_dir, kimia99_gt_dir, kimia99_thumb_dir)
 
 ## TEST SECTION ##
 
-
 def test_single_image_show(filepath):
     #img2show = None
     e = None
@@ -97,9 +97,19 @@ def test_single_image_show(filepath):
 
 
 ### RUNNING ALL TESTS
-def tests():
-    # poor bonefishes will be used forever lol
-    filepath = kimia99_original_dir + "/bonefishes.jpg"
-    print(filepath)
+def tests(test_mode):
+    if(test_mode):
+        try:
+            # poor bonefishes will be used forever lol
+            filepath = kimia99_original_dir + r"\bonefishes.jpg"
+            print(filepath)
 
-    test_single_image_show(filepath)
+            test_single_image_show(filepath)
+        except:
+            print("TESTS FAILED")
+
+        print("SUCESSFUL TESTS")
+    else:
+        pass
+
+tests(test_mode)
