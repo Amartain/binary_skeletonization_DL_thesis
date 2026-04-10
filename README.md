@@ -20,7 +20,7 @@ Questions before starting:
 
 ### Access
 - access data in a reliable way, ensuring minimal RAM usage too - using lazy loading.
-#### DataSet class
+#### DataSet class [4] [5]
 `__init__`: filepath, where to load from 
 `__len__` : gives back total samples 
 `__getitem__` : actually retrieving images - 1 at a time! 
@@ -38,7 +38,7 @@ Questions before starting:
 #### TEST EVERY STEP!
 
 ### Efficiency
-#### Data Loader
+#### Data Loader [3]
 - ensuring train/val/test dataset split...
 - on the fly augmentation and its set up well --- making subset/wrapper class for the training data vs validation and testing one!
 
@@ -50,10 +50,12 @@ Questions before starting:
 
 ## Result Visualization
 
-
+# Resources
 [1] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html
 [2] https://pillow.readthedocs.io/en/stable/handbook/tutorial.html
-
+[3] https://docs.pytorch.org/tutorials/beginner/basics/data_tutorial.html
+[4] https://www.geeksforgeeks.org/python/how-to-convert-images-to-numpy-array/
+[5] https://docs.pytorch.org/docs/stable/generated/torch.from_numpy.html
 
 # Stage 3
 ### Data augmentation
