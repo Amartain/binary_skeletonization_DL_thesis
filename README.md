@@ -41,6 +41,8 @@ Questions before starting:
 #### Data Loader [3]
 - ensuring train/val/test dataset split...
 - on the fly augmentation and its set up well --- making subset/wrapper class for the training data vs validation and testing one!
+- using [6] [7] MANUAL seed for reproducibility AND to ensure test set ALWAYS remains a test set! (only used once I finished stage one and stopped wanting to improve!)
+- ensuring fixed train/val/test -- and stupid subsets [8]
 
 ## Model Architecture
 
@@ -56,6 +58,9 @@ Questions before starting:
 [3] https://docs.pytorch.org/tutorials/beginner/basics/data_tutorial.html
 [4] https://www.geeksforgeeks.org/python/how-to-convert-images-to-numpy-array/
 [5] https://docs.pytorch.org/docs/stable/generated/torch.from_numpy.html
+[6] https://docs.pytorch.org/docs/stable/data.html#torch.utils.data.random_split
+[7] https://docs.pytorch.org/docs/stable/generated/torch.Generator.html#torch.Generator
+[8] https://docs.pytorch.org/docs/stable/data.html#torch.utils.data.Subset
 
 # Stage 3
 ### Data augmentation
