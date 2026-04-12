@@ -44,7 +44,27 @@ Questions before starting:
 - using [6] [7] MANUAL seed for reproducibility AND to ensure test set ALWAYS remains a test set! (only used once I finished stage one and stopped wanting to improve!)
 - ensuring fixed train/val/test -- and stupid subsets [8]
 
-## Model Architecture
+## Model Architecture [9]
+- Encoder - Downsampling
+    - CONV BLOCK >> DOWNSAMPLE (maxpool) & 2x channels >> next conv block >> down...
+    - saves convoluted output BEFORE maxpool every time because we will do skip connections with it !
+    - 2x CHANNELS after each conv block 
+    - PADDING: make so it remains the SAME SIZE! - saves headache [10]
+- Bottleneck / Bridge - no Pool
+    - so regular ass convolution w/o pool
+- Decoder - Upsampling - Mode for skeletons gotta be: nearest neighbour not bilinear!
+    - UPSAMPLE (convtranspose)  & 1/2x channels  >> CONV BLOCK >> UPSAMPLE >> next conv block...
+    - Upsampling via: ConvTranspose 
+- Connecting paths
+     - concatanation that's it just cat... meow
+        - cat places convoluted image at that stage ALONGSIDE the decoded features!
+- OUT: convolution final time w/o w/ SIGMOID for binary image segmentation
+
+Test: model parameters how many total?
+
+MODEL improvement for stage 2/3/4: different initializiation states - he_normal etc
+- different U-Net models: Residual U-Net, Attention U-Net
+
 
 ## Training Epoch
 
@@ -61,6 +81,9 @@ Questions before starting:
 [6] https://docs.pytorch.org/docs/stable/data.html#torch.utils.data.random_split
 [7] https://docs.pytorch.org/docs/stable/generated/torch.Generator.html#torch.Generator
 [8] https://docs.pytorch.org/docs/stable/data.html#torch.utils.data.Subset
+[9] https://www.codegenes.net/blog/unet-segmentation-pytorch/
+[10] https://docs.pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
+
 
 # Stage 3
 ### Data augmentation

@@ -9,7 +9,7 @@ from torch import manual_seed
 
 # Setup parameters
 test_mode = True
-print_mode = False
+print_mode = True
 batch_size = 14
 random_seed = 42
 manual_seed(random_seed) # for reproducability leave it at that ! 
@@ -21,6 +21,11 @@ manual_seed(random_seed) # for reproducability leave it at that !
 kimia99_original_dir = r"data\kimia99_dataset\Kimia99-Original"
 kimia99_gt_dir = r"data\kimia99_dataset\Kimia99-GT"
 kimia99_thumb_dir = r"data\kimia99_dataset\Kimia99-Thumb"
+
+kimia216_original_dir = r"data\kimia216_dataset\Kimia216-Original"
+kimia216_gt_dir = r"data\kimia216_dataset\Kimia216-GT"
+kimia216_thumb_dir = r"data\kimia216_dataset\Kimia216-Thumb"
+
 
 
 # Helper functions
@@ -39,7 +44,7 @@ def clean_labels(jpg_filenames):
 # `__getitem__` : actually retrieving images - 1 at a time! 
 
 
-class Kimia99(Dataset):
+class Kimia(Dataset):
     """
     original_dir - path to directory with the original shapes - in jpg format - 
     gt_dir - path to directory with the ground truth "labels" / images - in png format -
@@ -128,6 +133,8 @@ def train_val_test_split(dataset, test_friction=0.15, val_friction=0.15):
     IN: Dataset class, friction sizes of test and validation datasets
     OUT: read test, validation and train datasets!
     """
+  
+
     val_len = int(len(dataset) * val_friction)
     test_len = int(len(dataset) * test_friction)
     train_len = len(dataset) - val_len - test_len
@@ -143,8 +150,8 @@ def train_val_test_split(dataset, test_friction=0.15, val_friction=0.15):
 ## TEST SECTION ##
 #  TEST EVERY STEP!
 # dataset to be tested
-dataset = Kimia99(kimia99_original_dir, kimia99_gt_dir, kimia99_thumb_dir, transform)
-
+# dataset = Kimia(kimia99_original_dir, kimia99_gt_dir, kimia99_thumb_dir, transform)
+dataset = Kimia(kimia216_original_dir, kimia216_gt_dir, kimia216_thumb_dir, transform)
 
 
 def test_train_val_test_split(dataset):
@@ -170,10 +177,9 @@ def test_single_image_show(filepath):
 
 
 def test_dataset(dataset):
-
-    # print(dataset.get_len())
-    # print(dataset.get_labels())
+    print(len(dataset))
     
+    print("Testing DataLoader")
     # single batch for test
     single_batch_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
@@ -183,6 +189,8 @@ def test_dataset(dataset):
         idx += 1
        # print(idx, label)
         labels.append(label)
+
+
     print("test_dataset run successfully")
 
     return labels
@@ -190,11 +198,9 @@ def test_dataset(dataset):
 def tests(test_mode, print_mode):
     if(test_mode):
         try:
-            # poor bonefishes will be used forever lol
-            filepath = kimia99_original_dir + r"\bonefishes.jpg"
-
-            # test_single_image_show(filepath)
+            print('Testing |"Mother"| Dataset')
             dataset_labels = test_dataset(dataset)
+            print('Testing Train/Val/Test Split')
             train_ds, val_ds, test_ds =  test_train_val_test_split(dataset)
 
             if print_mode:
@@ -202,7 +208,7 @@ def tests(test_mode, print_mode):
                 test_labels = test_dataset(test_ds)
                 print("-"*80, "testing Val Dataset")
                 val_labels = test_dataset(val_ds)
-                print("-"*80, "testing Val Dataset")
+                print("-"*80, "testing Train Dataset")
                 train_labels = test_dataset(train_ds) 
 
 
