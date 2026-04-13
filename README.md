@@ -38,13 +38,13 @@ Questions before starting:
 #### TEST EVERY STEP!
 
 ### Efficiency
-#### Data Loader [3]
+#### Data Loader [3] [10]
 - ensuring train/val/test dataset split...
 - on the fly augmentation and its set up well --- making subset/wrapper class for the training data vs validation and testing one!
 - using [6] [7] MANUAL seed for reproducibility AND to ensure test set ALWAYS remains a test set! (only used once I finished stage one and stopped wanting to improve!)
 - ensuring fixed train/val/test -- and stupid subsets [8]
 
-## Model Architecture [9]
+## Model Architecture [9] [13]
 - Encoder - Downsampling
     - CONV BLOCK >> DOWNSAMPLE (maxpool) & 2x channels >> next conv block >> down...
     - saves convoluted output BEFORE maxpool every time because we will do skip connections with it !
@@ -72,6 +72,16 @@ MODEL improvement for stage 2/3/4: different initializiation states - he_normal 
 
 ## Result Visualization
 
+## Constants:
+### Dataset Constants
+KIMIA99 = 1
+KIMIA216 = 2
+
+RANDOM_SEED = 42
+GENERATOR = manual_seed(random_seed)
+BATCH_SIZE = 16
+STARTING_FEATURE_NO = 16
+
 # Resources
 [1] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html
 [2] https://pillow.readthedocs.io/en/stable/handbook/tutorial.html
@@ -83,6 +93,9 @@ MODEL improvement for stage 2/3/4: different initializiation states - he_normal 
 [8] https://docs.pytorch.org/docs/stable/data.html#torch.utils.data.Subset
 [9] https://www.codegenes.net/blog/unet-segmentation-pytorch/
 [10] https://docs.pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
+[11] https://docs.pytorch.org/tutorials/beginner/basics/data_tutorial.html
+[12] https://docs.pytorch.org/docs/stable/size.html#torch-size - for TESTING and DEBUGGING
+[13] https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module
 
 
 # Stage 3

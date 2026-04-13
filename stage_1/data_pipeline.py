@@ -8,11 +8,11 @@ import os
 from torch import manual_seed
 
 # Setup parameters
-test_mode = True
-print_mode = True
+test_mode = False
+print_mode = False
 batch_size = 14
 random_seed = 42
-manual_seed(random_seed) # for reproducability leave it at that ! 
+generator = manual_seed(random_seed) # for reproducability leave it at that ! 
 
 # ## Data Pipeline / Data preparation
 
@@ -116,8 +116,8 @@ class Kimia(Dataset):
 # simple tensor conversion for now because we in stage 1 we don't do data augmentation!
 transform = transforms.Compose(
     [
-        transforms.Resize(120), #ensuring 120 min
-        transforms.CenterCrop(120),
+        transforms.Resize(128), #ensuring 120 min
+        transforms.CenterCrop(128),
         transforms.ToTensor()
     ]
 )
@@ -146,6 +146,31 @@ def train_val_test_split(dataset, test_friction=0.15, val_friction=0.15):
     return train_dataset, val_dataset, test_dataset
 
 
+# DataSet Numbers
+# 1 = Kimia99
+# 2 = Kimia216
+
+# Putting together so we have model input
+def get_train_test_val_loaders(dataset_no):
+    print("Getting loaders", "."*70)
+    if dataset_no == 1: # Kimia99
+        dataset = Kimia(kimia99_original_dir,kimia99_gt_dir, kimia99_thumb_dir, transform=transform)
+    elif dataset_no == 2:
+        dataset = Kimia(kimia216_original_dir, kimia216_gt_dir, kimia216_thumb_dir, transform=transform)
+    else:
+        print("Dataset Number doesn't exist.")
+        return None    
+
+    train_dataset, val_dataset, test_dataset = train_val_test_split(dataset=dataset)
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, generator=generator)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False) 
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)  
+
+    print("DataLoaders ready", "."*70)
+
+    return train_loader, val_loader, test_loader
+
 
 ## TEST SECTION ##
 #  TEST EVERY STEP!
@@ -153,6 +178,29 @@ def train_val_test_split(dataset, test_friction=0.15, val_friction=0.15):
 # dataset = Kimia(kimia99_original_dir, kimia99_gt_dir, kimia99_thumb_dir, transform)
 dataset = Kimia(kimia216_original_dir, kimia216_gt_dir, kimia216_thumb_dir, transform)
 
+def test_get_train_test_val_loaders(dataset_no):
+    logs = []
+    title = "TESTING DATASET: [" + str(dataset_no) + "]"
+    logs.append(title)
+
+    
+
+   # TODO finish
+    try:
+        logs.append("Testing GET LOADERS if RUN")
+        train_loader, val_loader, test_loader = get_train_test_val_loaders(dataset_no)
+
+        logs.append("Testing TRAIN Loader object")
+        logs.append(list(next(iter(train_loader))))
+        logs.append("Testing TEST Loader object")
+        logs.append(list(next(iter(test_loader))))
+        logs.append("Testing VAL Loader object")
+        logs.append(list(next(iter(test_loader))))
+    except Exception as e:
+        logs.append("ERROR!: ")
+        logs.append(e)
+
+    return logs 
 
 def test_train_val_test_split(dataset):
     val_len = 0.1
@@ -176,7 +224,7 @@ def test_single_image_show(filepath):
         print(e)
 
 
-def test_dataset(dataset):
+def test_dataset_class(dataset):
     print(len(dataset))
     
     print("Testing DataLoader")
@@ -195,21 +243,21 @@ def test_dataset(dataset):
 
     return labels
 ### RUNNING ALL TESTS
-def tests(test_mode, print_mode):
+def tests(print_mode):
     if(test_mode):
         try:
             print('Testing |"Mother"| Dataset')
-            dataset_labels = test_dataset(dataset)
+            dataset_labels = test_dataset_class(dataset)
             print('Testing Train/Val/Test Split')
             train_ds, val_ds, test_ds =  test_train_val_test_split(dataset)
 
             if print_mode:
                 print("-"*80, "testing Test Dataset")
-                test_labels = test_dataset(test_ds)
+                test_labels = test_dataset_class(test_ds)
                 print("-"*80, "testing Val Dataset")
-                val_labels = test_dataset(val_ds)
+                val_labels = test_dataset_class(val_ds)
                 print("-"*80, "testing Train Dataset")
-                train_labels = test_dataset(train_ds) 
+                train_labels = test_dataset_class(train_ds) 
 
 
                 print("="*80)
@@ -233,4 +281,24 @@ def tests(test_mode, print_mode):
     else:
         pass
 
-tests(test_mode, print_mode)
+def test_with_logs(test_mode):
+    logs = []
+    if test_mode:
+
+
+        logs.append("KIMIA 99 DATALOADER TEST Started")
+        kimia99_test = test_get_train_test_val_loaders(dataset_no=1)
+        logs.append("KIMIA 216 DATALOADER TEST STARTED")
+        kimia216_test = test_get_train_test_val_loaders(dataset_no=2)
+
+    return logs
+
+
+
+
+if print_mode and test_mode:
+    print(test_get_train_test_val_loaders(1))
+    print(test_get_train_test_val_loaders(2))
+    # tests(print_mode=True)
+elif test_mode:
+    tests(print_mode=False)
