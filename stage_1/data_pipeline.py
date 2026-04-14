@@ -15,6 +15,7 @@ print_mode = False
 batch_size = 14
 random_seed = 42
 generator = manual_seed(random_seed) # for reproducability leave it at that ! 
+IMAGE_SIZE = 160
 
 # ## Data Pipeline / Data preparation
 
@@ -121,7 +122,7 @@ class Kimia(Dataset):
 # simple tensor conversion for now because we in stage 1 we don't do data augmentation!
 transform = transforms.Compose(
     [
-        transforms.CenterCrop(150),
+        transforms.CenterCrop(IMAGE_SIZE),
         v2.Compose([v2.ToImage(), v2.ToDtype(float32, scale=False)]) # binary images don't need scaling!
     ]
 )
@@ -338,5 +339,5 @@ if print_mode and test_mode:
     # tests(print_mode=True)
 elif test_mode:
     tests(print_mode=False)
+    test_show_loader_outputs(1)
 
-test_show_loader_outputs(1)

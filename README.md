@@ -84,10 +84,9 @@ BATCH_SIZE = 16
 STARTING_FEATURE_NO = 16
 
 # Stage 1 tests [12] [14]
-## Visualizations for testing
+## Visualizations for testing [17]
 Simple show image stuff, only PIL used really
-- PIL image show
-- tensor to PIL image 
+- using tensor > numpy > plt imshow
 
 
 
@@ -109,6 +108,7 @@ Simple show image stuff, only PIL used really
 [15] https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy-array
 [16] https://docs.pytorch.org/vision/main/generated/torchvision.transforms.v2.ToTensor.html?highlight=totensor#torchvision.transforms.v2.ToTensor
 [17] https://numpy.org/doc/stable/reference/generated/numpy.unique.html
+[18] https://www.codegenes.net/blog/pytorch-check-visualize-model-cnn/
 
 # Stage 2
 

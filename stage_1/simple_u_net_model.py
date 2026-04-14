@@ -1,6 +1,7 @@
 from torch import manual_seed, nn
-
 from data_pipeline import get_train_test_val_loaders
+import numpy as np
+from stage1_tests import show_image_from_tensor
 
 
 # Setup
@@ -116,8 +117,14 @@ def test_model_class(model, dataset_no):
         x, *_ = next(iter(train_loader)) # * puts all return arg there into a list _ is ignorable namign conv
         logs.append(x.size())
         
+        print("TESTING Xs")
+        detached_x = x[0].squeeze().detach()
+        show_image_from_tensor(detached_x)
+
         logs.append("testing FORWARD method")
         output = model.forward(x)
+
+        
 
         logs.append("MODEL OUTPUT")
         if (isinstance(output, tuple)):
@@ -126,16 +133,18 @@ def test_model_class(model, dataset_no):
             logs.append(conv_x.size())
             logs.append("x Size: ")
             logs.append(x.size())
+            
+            show_image_from_tensor(conv_x[0,1].detach())
+
+            show_image_from_tensor(x[0,1].detach())
         else:
             logs.append(output.size())
+            show_image_from_tensor(output[0,1].detach())
     except Exception as e:
         logs.append("ERORR!")
         logs.append(e)
     
     return logs 
-
-
-
 
 if test_mode:
     model = EncoderBlock()
