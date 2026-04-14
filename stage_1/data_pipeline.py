@@ -3,9 +3,10 @@ from PIL import Image
 from torch.utils.data import Dataset, random_split, DataLoader
 from torch import Generator, tensor
 from torchvision import transforms
+from torchvision.transforms import v2
 import numpy as np
 import os
-from torch import manual_seed
+from torch import manual_seed, float32
 from stage1_tests import show_image_from_tensor
 
 # Setup parameters
@@ -93,9 +94,10 @@ class Kimia(Dataset):
         gt_path = os.path.join(self.gt_dir, png_filename)
         thumb_path = os.path.join(self.thumbs_dir, png_filename)
 
-        original = Image.open(original_path).convert(mode="L")
-        gt = Image.open(gt_path).convert(mode="L")
-        thumb = Image.open(thumb_path).convert(mode="L")
+        # set mode to binary!!!
+        original = Image.open(original_path).convert(mode="1")
+        gt = Image.open(gt_path).convert(mode="1")
+        thumb = Image.open(thumb_path).convert(mode="1")
 
         return original, gt, thumb, label
     
@@ -119,9 +121,8 @@ class Kimia(Dataset):
 # simple tensor conversion for now because we in stage 1 we don't do data augmentation!
 transform = transforms.Compose(
     [
-        transforms.Resize(128), #ensuring 120 min
-        transforms.CenterCrop(128),
-        transforms.ToTensor()
+        transforms.CenterCrop(150),
+        v2.Compose([v2.ToImage(), v2.ToDtype(float32, scale=False)]) # binary images don't need scaling!
     ]
 )
 
@@ -181,17 +182,36 @@ def get_train_test_val_loaders(dataset_no):
 # dataset = Kimia(kimia99_original_dir, kimia99_gt_dir, kimia99_thumb_dir, transform)
 dataset = Kimia(kimia216_original_dir, kimia216_gt_dir, kimia216_thumb_dir, transform)
 
+def get_single_image_tensor_from_loader(data_loader):
 
-def test_show_single_train_image(dataset_no):
-    train_loader, *_ = get_train_test_val_loaders(dataset_no)
+    img_tensor = next(iter(data_loader))[1][0] # original/skel/thumb image col+ label, getting 1 single sample!
+    img_tensor = img_tensor.squeeze() # reducing (1,128,128) to just (128,128) cause that's what we need
+    img_tensor = tensor(img_tensor)
 
-    train_image_1 = next(iter(train_loader))[0][0] # original image col, getting 1 single sample!
-    train_image_1 = train_image_1.squeeze() # reducing (1,128,128) to just (128,128) cause that's what we need
-    train_image_1 = tensor(train_image_1)
+    return img_tensor
+
+### Comment out unused tests
+def test_show_loader_outputs(dataset_no):
+    train_loader, test_loader, val_loader = get_train_test_val_loaders(dataset_no)
     
-    print(train_image_1.unique(sorted=True))
+    train_img = get_single_image_tensor_from_loader(train_loader)
+    test_show_image(train_img)
+    val_img = get_single_image_tensor_from_loader(val_loader)
+    test_show_image(val_img)
+    test_img = get_single_image_tensor_from_loader(test_loader)
+    test_show_image(test_img)
 
-    show_image_from_tensor(train_image_1)
+
+
+
+
+
+
+def test_show_image(image_tensor):
+    # ensuring we have an actual image
+    # print(train_image_1.unique(return_counts=True, sorted=True)) 
+
+    show_image_from_tensor(image_tensor)
 
 def test_get_train_test_val_loaders(dataset_no):
     logs = []
@@ -319,5 +339,4 @@ if print_mode and test_mode:
 elif test_mode:
     tests(print_mode=False)
 
-### Comment out unused tests
-print(test_show_single_train_image(1))
+test_show_loader_outputs(1)

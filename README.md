@@ -43,6 +43,7 @@ Questions before starting:
 - on the fly augmentation and its set up well --- making subset/wrapper class for the training data vs validation and testing one!
 - using [6] [7] MANUAL seed for reproducibility AND to ensure test set ALWAYS remains a test set! (only used once I finished stage one and stopped wanting to improve!)
 - ensuring fixed train/val/test -- and stupid subsets [8]
+- image scaling  and conversion to tensor ! [16]
 
 ## Model Architecture [9] [13]
 - Encoder - Downsampling
@@ -106,6 +107,8 @@ Simple show image stuff, only PIL used really
 [13] https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module
 [14] https://docs.pytorch.org/docs/stable/generated/torch.zeros.html#torch.zeros 
 [15] https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy-array
+[16] https://docs.pytorch.org/vision/main/generated/torchvision.transforms.v2.ToTensor.html?highlight=totensor#torchvision.transforms.v2.ToTensor
+[17] https://numpy.org/doc/stable/reference/generated/numpy.unique.html
 
 # Stage 2
 

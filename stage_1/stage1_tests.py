@@ -19,33 +19,24 @@ def tensor_to_image(img_tensor_on_CPU):
     logs.append(title)
     try:
         print("HAHOO")
-        img_as_np = np.array(img_tensor_on_CPU, dtype=np.uint8) * 255 # scaling up!
-        logs.append(img_as_np)
-        logs.append(np.shape(img_as_np))
-        print(logs)
+        img_as_np = np.array(img_tensor_on_CPU, dtype=np.uint8)
         logs.append("TRYING TO SHOW IMAGE")
         logs.append(filler_lines)
-        img = Image.fromarray(img_as_np,mode="1") # 1 binary???
+        plt.imshow(img_as_np, cmap="Grays")
+        plt.show()
+        logs.append(list(np.unique(img_as_np, return_counts=True)))
+
     except Exception as e:
         logs.append(["Upps ERROR: ", e])
         return None, logs
 
-    return img, logs
+    return logs
 
 def show_image_from_tensor(img_tensor_on_CPU):
     logs = []
-    img, logs_ = tensor_to_image(img_tensor_on_CPU)
-    logs.append(logs_)
+    logs.append(tensor_to_image(img_tensor_on_CPU))
+
     print(logs)
-    if img_tensor_on_CPU is not None:
-        try:
-            show_image(img)
-        except Exception as e:
-            logs.append(e)
-            return logs
-    else:
-        logs.append("show_image_from_tensor(img_tensor_on_CPU): Recieved None Image")
-        return logs
 
     return logs 
 
