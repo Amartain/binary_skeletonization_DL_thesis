@@ -82,6 +82,14 @@ GENERATOR = manual_seed(random_seed)
 BATCH_SIZE = 16
 STARTING_FEATURE_NO = 16
 
+# Stage 1 tests [12] [14]
+## Visualizations for testing
+Simple show image stuff, only PIL used really
+- PIL image show
+- tensor to PIL image 
+
+
+
 # Resources
 [1] https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html
 [2] https://pillow.readthedocs.io/en/stable/handbook/tutorial.html
@@ -96,7 +104,14 @@ STARTING_FEATURE_NO = 16
 [11] https://docs.pytorch.org/tutorials/beginner/basics/data_tutorial.html
 [12] https://docs.pytorch.org/docs/stable/size.html#torch-size - for TESTING and DEBUGGING
 [13] https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module
+[14] https://docs.pytorch.org/docs/stable/generated/torch.zeros.html#torch.zeros 
+[15] https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy-array
 
+# Stage 2
+
+## Stage 2 Tests 
+### Visual Tests 
+- grid of: original, predicted ground truth, predicted thumb, actual ground truth, actual thumb, predicted skel layed over ground truth - differences in red??? + label! >>> MOVE TO STAGE 2 that one!
 
 # Stage 3
 ### Data augmentation

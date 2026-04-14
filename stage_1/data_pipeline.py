@@ -1,11 +1,12 @@
 # Stage 1
 from PIL import Image
 from torch.utils.data import Dataset, random_split, DataLoader
-from torch import Generator
+from torch import Generator, tensor
 from torchvision import transforms
 import numpy as np
 import os
 from torch import manual_seed
+from stage1_tests import show_image_from_tensor
 
 # Setup parameters
 test_mode = False
@@ -26,7 +27,9 @@ kimia216_original_dir = r"data\kimia216_dataset\Kimia216-Original"
 kimia216_gt_dir = r"data\kimia216_dataset\Kimia216-GT"
 kimia216_thumb_dir = r"data\kimia216_dataset\Kimia216-Thumb"
 
-
+# TODO: Make a function to visualize images - (loaded, transformed, outputs)
+# TODO: refactor old test code to use log [] lists instead of prints and only print 1x / stage! 
+# (started data laoding and stuff like that - THAT WE WANT TO SEE IMMEDIATELY!!!1
 
 # Helper functions
 
@@ -178,12 +181,22 @@ def get_train_test_val_loaders(dataset_no):
 # dataset = Kimia(kimia99_original_dir, kimia99_gt_dir, kimia99_thumb_dir, transform)
 dataset = Kimia(kimia216_original_dir, kimia216_gt_dir, kimia216_thumb_dir, transform)
 
+
+def test_show_single_train_image(dataset_no):
+    train_loader, *_ = get_train_test_val_loaders(dataset_no)
+
+    train_image_1 = next(iter(train_loader))[0][0] # original image col, getting 1 single sample!
+    train_image_1 = train_image_1.squeeze() # reducing (1,128,128) to just (128,128) cause that's what we need
+    train_image_1 = tensor(train_image_1)
+    
+    print(train_image_1.unique(sorted=True))
+
+    show_image_from_tensor(train_image_1)
+
 def test_get_train_test_val_loaders(dataset_no):
     logs = []
     title = "TESTING DATASET: [" + str(dataset_no) + "]"
     logs.append(title)
-
-    
 
    # TODO finish
     try:
@@ -196,6 +209,9 @@ def test_get_train_test_val_loaders(dataset_no):
         logs.append(list(next(iter(test_loader))))
         logs.append("Testing VAL Loader object")
         logs.append(list(next(iter(test_loader))))
+
+        
+
     except Exception as e:
         logs.append("ERROR!: ")
         logs.append(e)
@@ -302,3 +318,6 @@ if print_mode and test_mode:
     # tests(print_mode=True)
 elif test_mode:
     tests(print_mode=False)
+
+### Comment out unused tests
+print(test_show_single_train_image(1))
