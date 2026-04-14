@@ -55,7 +55,7 @@ Questions before starting:
     - so regular ass convolution w/o pool
 - Decoder - Upsampling - Mode for skeletons gotta be: nearest neighbour not bilinear!
     - UPSAMPLE (convtranspose)  & 1/2x channels  >> CONV BLOCK >> UPSAMPLE >> next conv block...
-    - Upsampling via: ConvTranspose 
+    - Upsampling via: ConvTranspose [19]
 - Connecting paths
      - concatanation that's it just cat... meow
         - cat places convoluted image at that stage ALONGSIDE the decoded features!
@@ -109,6 +109,7 @@ Simple show image stuff, only PIL used really
 [16] https://docs.pytorch.org/vision/main/generated/torchvision.transforms.v2.ToTensor.html?highlight=totensor#torchvision.transforms.v2.ToTensor
 [17] https://numpy.org/doc/stable/reference/generated/numpy.unique.html
 [18] https://www.codegenes.net/blog/pytorch-check-visualize-model-cnn/
+[19] https://docs.pytorch.org/docs/stable/generated/torch.nn.modules.conv.ConvTranspose2d.html#convtranspose2d
 
 # Stage 2
 
