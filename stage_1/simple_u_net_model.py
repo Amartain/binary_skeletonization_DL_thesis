@@ -9,7 +9,7 @@ RANDOM_SEED = 42
 GENERATOR = manual_seed(RANDOM_SEED)
 BATCH_SIZE = 16
 STARTING_FEATURE_NO = 16
-TEST_MODE = False
+TEST_MODE = True
 
 # MODEL SETUP
 STRIDE = 2
@@ -71,7 +71,7 @@ class EncoderBlock(nn.Module):
         super().__init__()
         
         self.down_block = CNNBlock(input_channels,out_channels, kernel_size, padding, device)
-        self.maxpool = nn.MaxPool2d(kernel_size=POOL_TRANSPOSE_KERNEL_SIZE, stride=STRIDE, device=device)
+        self.maxpool = nn.MaxPool2d(kernel_size=POOL_TRANSPOSE_KERNEL_SIZE, stride=STRIDE)
 
     def forward(self, x):
         feature_map = self.down_block(x)
@@ -80,25 +80,8 @@ class EncoderBlock(nn.Module):
         return  x, feature_map
 
 
-# - Bottleneck / Bridge - no Pool
-#     - so regular ass convolution w/o pool - so just use CNNBlock class
 
 
-
-class Bridge(nn.Module):
-    def __init__(self, input_channels, out_channels, kernel_size=KERNEL_SIZE, padding=PADDING, device=None):
-         super().__init__()
-
-         self.conv_block = CNNBlock(input_channels, out_channels, kernel_size, padding, device)
-         self.up_conv = nn.ConvTranspose2d(input_channels, out_channels, padding, kernel_size=POOL_TRANSPOSE_KERNEL_SIZE, stride=STRIDE, device=device)
-         
-         
-
-    def forward(self, x):
-        x = self.conv_block(x)
-        x = self.up_conv(x)
-
-        return x
 # - Decoder - Upsampling - Mode for skeletons gotta be: nearest neighbour not bilinear!???
 #     - UPSAMPLE (convtranspose)  & 1/2x channels  >> CONV BLOCK >> UPSAMPLE >> next conv block...
 #     - Upsampling via: ConvTranspose 
@@ -106,23 +89,24 @@ class Bridge(nn.Module):
 class DecoderBlock(nn.Module):
     def __init__(self, input_channels, out_channels, kernel_size=KERNEL_SIZE, padding=PADDING, device=None):
         super().__init__()
-
+                # out channels SAME cause - this output will be CONCAT w/ feature map >> double >> ...
+        self.up_conv = nn.ConvTranspose2d(in_channels=input_channels, out_channels=out_channels, kernel_size=POOL_TRANSPOSE_KERNEL_SIZE, stride=STRIDE)
+        # input channels remain the same cause CONCAT >> 2xout_channels => input_channels again!
         self.conv_block = CNNBlock(input_channels, out_channels, kernel_size, padding, device)
-        self.up_conv = nn.ConvTranspose2d(out_channels, out_channels, kernel_size=POOL_TRANSPOSE_KERNEL_SIZE, stride=STRIDE)
 
 # - Connecting paths
 #      - concatanation that's it just cat... meow
 #         - cat places convoluted image at that stage ALONGSIDE the decoded features!
 
     def forward(self, x, feature_map):
-        x = cat(feature_map,x,dim=1)
-        x = self.conv_block(x)
         x = self.up_conv(x)
+        x = cat((feature_map,x),dim=1)
+        x = self.conv_block(x) 
 
         return x
 
-class simple_UNet(nn.Module):
-    def __init__(self, input_channels, kernel_size=KERNEL_SIZE, padding=PADDING, device=None):
+class Simple_UNet(nn.Module):
+    def __init__(self, input_channels=1, kernel_size=KERNEL_SIZE, padding=PADDING, device=None):
         super().__init__()
 
         # Encoder / Down 
@@ -134,10 +118,11 @@ class simple_UNet(nn.Module):
         self.encoder_block4 = EncoderBlock(input_channels=OUT_CHANNELS*4, out_channels=OUT_CHANNELS*8)
 
         # Bridge
+        # - Bottleneck / Bridge - no Pool
+#     - so regular ass convolution w/o pool - so just use CNNBlock class
         # in channels default - 128 > 256
-        self.bridge = Bridge(input_channels=OUT_CHANNELS*8, out_channels=OUT_CHANNELS*16)
+        self.bridge = CNNBlock(input_channels=OUT_CHANNELS*8, out_channels=OUT_CHANNELS*16, kernel_size=kernel_size, padding=padding, device=device)
 
-        # TODO: fix decoder channels - w/ cat half etc think through!
         # Decoder / Up
         # start channel default 256 > 128 > 64 > 32 > 16
         # HALF start channel every block
@@ -228,12 +213,12 @@ def test_model_class(model, dataset_no):
             logs.append("x Size: ")
             logs.append(x.size())
             
-            show_image_from_tensor(conv_x[0,1].detach())
+            show_image_from_tensor(conv_x[0,0].detach())
 
-            show_image_from_tensor(x[0,1].detach())
+            show_image_from_tensor(x[0,0].detach())
         else:
             logs.append(output.size())
-            show_image_from_tensor(output[0,1].detach())
+            show_image_from_tensor(output[0,0].detach())
     except Exception as e:
         logs.append("ERORR!")
         logs.append(e)
@@ -241,6 +226,7 @@ def test_model_class(model, dataset_no):
     return logs 
 
 if TEST_MODE:
-    model = EncoderBlock()
+    model = Simple_UNet()
     dataset = KIMIA216
     print(test_model_class(model, dataset))
+
