@@ -23,9 +23,9 @@ KIMIA216 = 2
 # Model setup - see in the model code!
 
 # Training Setup 
-NO_EPOCHS = 100
+NO_EPOCHS = 50
 LR_RATE = 0.01 # setup for Adam!
-WEIGHT_DECAY = 0.0 # set to 0 for stage 1!
+WEIGHT_DECAY = 0.1 # set to 0 for stage 1!
 
 
 
@@ -111,6 +111,42 @@ def train_model(model, device, loss_function, optimizer, train_loader, val_loade
     # I wanna plot this later
     return model, train_losses, val_losses
 
+def visualize_results(model, val_loader):
+    image, skeleton, thumbs, label = next(iter(val_loader))
+
+   # move input to device the model dwells on
+    image = image.to(device)
+
+    model.eval()
+    pred = model(image)
+
+    print("Prediction mean", pred.mean(), "Prediction median", pred.median(), "highest pred. ", pred.max(), "Pred min.", pred.min())
+    print("Unique prediction", pred.unique())
+    # transitioning it to 1s and zeroes by masking
+    pred_mask = pred > 0.5
+    # converting to [0., 1.] image!
+    pred = pred_mask.to(torch.float32)
+    
+    print(pred.unique())
+
+
+    # moving back to CPU for visualization & detaching from grads.
+    image = image.to("cpu")
+    
+    pred = pred.detach()
+    print("after detach()", pred.unique())
+    pred = pred.to("cpu")
+    print("after 2 cpu", pred.unique())
+
+    # select an image & sqeeze down so batch dimension is gone!
+    image = image[0].squeeze()
+    pred = pred[0].squeeze()
+
+    print("after pred[0].squeeze()", pred.size(), pred.unique())
+
+    test_show_image(image)
+    test_show_image(pred)
+
 # TRAINING Setup
 
 print("0. INIT MODEL")
@@ -129,7 +165,12 @@ train_loader, val_loader, test_loader = get_train_test_val_loaders(KIMIA99)
 
 print("3. STARTING TRAINING")
 print("_"*80)
-model, train_losses, val_losses = train_model(model, device, BCE_loss, optimizer, train_loader, val_loader)
+trained_model, train_losses, val_losses = train_model(model, device, BCE_loss, optimizer, train_loader, val_loader)
 
 print("VISUALIZE RESULTS")
 print("-"*80)
+visualize_results(trained_model, val_loader)
+
+
+
+

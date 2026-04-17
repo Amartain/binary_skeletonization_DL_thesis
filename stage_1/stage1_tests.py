@@ -27,9 +27,10 @@ def tensor_to_image(img_tensor_on_CPU):
         img_as_np = np.array(img_tensor_on_CPU, dtype=np.uint8)
         logs.append("TRYING TO SHOW IMAGE")
         logs.append(filler_lines)
+        logs.append(list(np.unique(img_as_np, return_counts=True)))
         plt.imshow(img_as_np, cmap="Grays")
         plt.show()
-        logs.append(list(np.unique(img_as_np, return_counts=True)))
+        
 
     except Exception as e:
         logs.append(["Upps ERROR: ", e])
