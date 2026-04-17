@@ -148,12 +148,13 @@ def visualize_results(model, val_loader):
     test_show_image(pred)
 
 # TRAINING Setup
+# TODO: model.to(device) implementation instead!!!!!!
 
 print("0. INIT MODEL")
 model = Simple_UNet(device=device)
 
 print("1. Setting up Loss & optims")
-BCE_loss = nn.BCELoss()
+BCE_loss = nn.BCELoss() # this isn't ideal / good because of HUGE class imbalance but this was just first step to test!
 
 # for some reason Adam didn't really seem to work - no learning vs... 0.09 both on val and training dataset!
 # # optimizer = optim.Adam(model.parameters(), lr=LR_RATE, weight_decay=WEIGHT_DECAY) 
