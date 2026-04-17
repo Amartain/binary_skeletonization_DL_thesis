@@ -1,29 +1,22 @@
+import torch
 from torch import manual_seed, nn, cat
-from data_pipeline import get_train_test_val_loaders
-import numpy as np
-from stage1_tests import show_image_from_tensor
+
 
 
 # Setup
 RANDOM_SEED = 42
 GENERATOR = manual_seed(RANDOM_SEED)
-BATCH_SIZE = 16
-STARTING_FEATURE_NO = 16
-TEST_MODE = True
+
 
 # MODEL SETUP
 STRIDE = 2
 POOL_TRANSPOSE_KERNEL_SIZE = (2,2)
 KERNEL_SIZE = (3,3)
 PADDING = "same"
-OUT_CHANNELS = 16 # doubled w/ every down!
-
-
+OUT_CHANNELS = 16 # doubled w/ every down! this is where we start!!!!!
 device = None
 
-# Dataset Numbers
-KIMIA99 = 1
-KIMIA216 = 2
+
 
 
 # ## Model Architecture [9]
@@ -90,7 +83,7 @@ class DecoderBlock(nn.Module):
     def __init__(self, input_channels, out_channels, kernel_size=KERNEL_SIZE, padding=PADDING, device=None):
         super().__init__()
                 # out channels SAME cause - this output will be CONCAT w/ feature map >> double >> ...
-        self.up_conv = nn.ConvTranspose2d(in_channels=input_channels, out_channels=out_channels, kernel_size=POOL_TRANSPOSE_KERNEL_SIZE, stride=STRIDE)
+        self.up_conv = nn.ConvTranspose2d(in_channels=input_channels, out_channels=out_channels, kernel_size=POOL_TRANSPOSE_KERNEL_SIZE, stride=STRIDE, device=device)
         # input channels remain the same cause CONCAT >> 2xout_channels => input_channels again!
         self.conv_block = CNNBlock(input_channels, out_channels, kernel_size, padding, device)
 
@@ -112,10 +105,10 @@ class Simple_UNet(nn.Module):
         # Encoder / Down 
         # defaul start in: 1 then 16 > 32 > 64 > 128
         # DOUBLE out_channels every block!
-        self.encoder_block1 = EncoderBlock(input_channels,OUT_CHANNELS)
-        self.encoder_block2 = EncoderBlock(input_channels=OUT_CHANNELS, out_channels=OUT_CHANNELS*2)
-        self.encoder_block3 = EncoderBlock(input_channels=OUT_CHANNELS*2, out_channels=OUT_CHANNELS*4)
-        self.encoder_block4 = EncoderBlock(input_channels=OUT_CHANNELS*4, out_channels=OUT_CHANNELS*8)
+        self.encoder_block1 = EncoderBlock(input_channels,OUT_CHANNELS, device=device)
+        self.encoder_block2 = EncoderBlock(input_channels=OUT_CHANNELS, out_channels=OUT_CHANNELS*2, device=device)
+        self.encoder_block3 = EncoderBlock(input_channels=OUT_CHANNELS*2, out_channels=OUT_CHANNELS*4, device=device)
+        self.encoder_block4 = EncoderBlock(input_channels=OUT_CHANNELS*4, out_channels=OUT_CHANNELS*8, device=device)
 
         # Bridge
         # - Bottleneck / Bridge - no Pool
@@ -126,10 +119,10 @@ class Simple_UNet(nn.Module):
         # Decoder / Up
         # start channel default 256 > 128 > 64 > 32 > 16
         # HALF start channel every block
-        self.decoder_block1 = DecoderBlock(input_channels=OUT_CHANNELS*16, out_channels=OUT_CHANNELS*8)
-        self.decoder_block2 = DecoderBlock(input_channels=OUT_CHANNELS*8, out_channels=OUT_CHANNELS*4)
-        self.decoder_block3 = DecoderBlock(input_channels=OUT_CHANNELS*4, out_channels=OUT_CHANNELS*2)
-        self.decoder_block4 = DecoderBlock(input_channels=OUT_CHANNELS*2, out_channels=OUT_CHANNELS)
+        self.decoder_block1 = DecoderBlock(input_channels=OUT_CHANNELS*16, out_channels=OUT_CHANNELS*8, device=device)
+        self.decoder_block2 = DecoderBlock(input_channels=OUT_CHANNELS*8, out_channels=OUT_CHANNELS*4, device=device)
+        self.decoder_block3 = DecoderBlock(input_channels=OUT_CHANNELS*4, out_channels=OUT_CHANNELS*2, device=device)
+        self.decoder_block4 = DecoderBlock(input_channels=OUT_CHANNELS*2, out_channels=OUT_CHANNELS, device=device)
 
         # Final Prediction layer
         # - OUT: convolution final time w/o w/ SIGMOID for binary image segmentation
@@ -161,72 +154,74 @@ class Simple_UNet(nn.Module):
 
         return x
 
+def training_epoch(model, device, loss_function, optimizer, train_loader):
+    epoch_loss = 0
+
+    # prev. epoch ends w/ .eval() mode because of the validation epoch so reset
+    model.train()
+
+    running_loss = 0.0
+
+    # I return thumbs and labels too but I actually don't care about it during training!
+     # later TODO: - make monitoring by labels see which label is accessed how many times! - maybe graph distributions?
+
+    for originals, skeletons, *_ in train_loader:
+        # data setup
+        x = originals.to(device)
+        y = skeletons.to(device)
+
+        # forward pass
+        optimizer.zero_grad()
+
+        output = model.forward(x)
+
+        # backward pass
+        loss = loss_function(output, y)
+
+        loss.backward()
+
+        optimizer.step()
+
+        # Accumulative LOSS
+        running_loss += loss.item() * len(x) # avarage out w/ batch_size to ensure same weight for all
+
+    epoch_loss = running_loss / len(train_loader.dataset)
+
+    return epoch_loss
+
+
+def val_epoch(model, device, loss_function, val_loader):
+    running_loss = 0.0
+
+    # set model to eval!
+    model.eval()
+
+    # no need for grad.
+    with torch.no_grad():
+        # I will only care about thumbs and labels when doing visual analysis...
+        for originals, skeletons, *_ in val_loader:
+            x = originals.to(device)
+            y = skeletons.to(device)
+
+            output = model(x)
+
+            loss = loss_function(output,y)
+
+            running_loss += loss.item() * len(x)
+
+
+    epoch_val_loss = running_loss / len(val_loader.dataset)
+
+    return epoch_val_loss
 
 
 
 
-# Test: model parameters how many total?
+
+
 
 # MODEL improvement for stage 2/3/4: different initializiation states - he_normal etc
 # - different U-Net models: Residual U-Net, Attention U-Net
 
 
-# TESTS 
-
-# For testing variables done
-
-# Path variables
-
-def test_model_class(model, dataset_no):
-    print("started class test")
-    logs = []
-    
-    try: 
-        logs.append("MODEL INFO")
-
-
-        logs.append(str(model))
-        
-        logs.append("DATA LOADER run")
-
-        train_loader, val_loader, test_loader = get_train_test_val_loaders(dataset_no)
-
-        # getting 1 item from the train loader just the original image the rest 
-        # skeleton (y), thumbs and labels we don't care about right now
-        x, *_ = next(iter(train_loader)) # * puts all return arg there into a list _ is ignorable namign conv
-        logs.append(x.size())
-        
-        print("TESTING Xs")
-        detached_x = x[0].squeeze().detach()
-        show_image_from_tensor(detached_x)
-
-        logs.append("testing FORWARD method")
-        output = model.forward(x)
-
-        
-
-        logs.append("MODEL OUTPUT")
-        if (isinstance(output, tuple)):
-            conv_x, x = output
-            logs.append("conv_x Size: ")
-            logs.append(conv_x.size())
-            logs.append("x Size: ")
-            logs.append(x.size())
-            
-            show_image_from_tensor(conv_x[0,0].detach())
-
-            show_image_from_tensor(x[0,0].detach())
-        else:
-            logs.append(output.size())
-            show_image_from_tensor(output[0,0].detach())
-    except Exception as e:
-        logs.append("ERORR!")
-        logs.append(e)
-    
-    return logs 
-
-if TEST_MODE:
-    model = Simple_UNet()
-    dataset = KIMIA216
-    print(test_model_class(model, dataset))
 

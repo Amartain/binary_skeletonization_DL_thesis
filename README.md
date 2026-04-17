@@ -66,10 +66,14 @@ Test: model parameters how many total?
 MODEL improvement for stage 2/3/4: different initializiation states - he_normal etc
 - different U-Net models: Residual U-Net, Attention U-Net
 
+## Training
+- optimizers: Adam - is the standard
+- loss functions : Dice, Binary Cross Entropy [21]
+- validation stats... that will be harder... 
+### Training Epoch [20]
+- DataLoader length of data [20]
 
-## Training Epoch
-
-## Validation Epoch
+### Validation Epoch
 
 ## Result Visualization
 
@@ -110,12 +114,21 @@ Simple show image stuff, only PIL used really
 [17] https://numpy.org/doc/stable/reference/generated/numpy.unique.html
 [18] https://www.codegenes.net/blog/pytorch-check-visualize-model-cnn/
 [19] https://docs.pytorch.org/docs/stable/generated/torch.nn.modules.conv.ConvTranspose2d.html#convtranspose2d
+[20] https://docs.pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
+[21] https://docs.pytorch.org/docs/stable/nn.html#loss-functions
+
 
 # Stage 2
+## different LOSS FUNCTIONS implemented
+- Dice, Dice + BCE, STAGE 3: SoftDice etc... 
+
 
 ## Stage 2 Tests 
 ### Visual Tests 
 - grid of: original, predicted ground truth, predicted thumb, actual ground truth, actual thumb, predicted skel layed over ground truth - differences in red??? + label! >>> MOVE TO STAGE 2 that one!
+
+### References
+[1] https://www.codegenes.net/blog/pytorch-diceloss/
 
 # Stage 3
 ### Data augmentation
