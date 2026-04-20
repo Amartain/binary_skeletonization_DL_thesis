@@ -27,7 +27,7 @@ device = None
 #     - PADDING: make so it remains the SAME SIZE! - saves headache
 class CNNBlock(nn.Module):
     
- def __init__(self, input_channels=1, out_channels=OUT_CHANNELS, kernel_size=KERNEL_SIZE, padding=PADDING, device=None):
+ def __init__(self, input_channels=1, out_channels=OUT_CHANNELS, kernel_size=KERNEL_SIZE, padding=PADDING):
         super().__init__()
     
         self.conv_block = nn.Sequential(
@@ -35,8 +35,7 @@ class CNNBlock(nn.Module):
                 in_channels=input_channels,
                 out_channels=out_channels,
                 kernel_size=kernel_size, 
-                padding=padding,
-                device=device
+                padding=padding
                 ),
             nn.ReLU()      
         )
@@ -45,8 +44,7 @@ class CNNBlock(nn.Module):
                 in_channels=out_channels,
                 out_channels=out_channels,
                 kernel_size=kernel_size, 
-                padding=padding,
-                device=device
+                padding=padding
                 ),
             nn.ReLU()   
         )
@@ -60,10 +58,10 @@ class CNNBlock(nn.Module):
 
 
 class EncoderBlock(nn.Module):
-    def __init__(self, input_channels=1, out_channels=OUT_CHANNELS, kernel_size=KERNEL_SIZE, padding=PADDING, device=None):
+    def __init__(self, input_channels=1, out_channels=OUT_CHANNELS, kernel_size=KERNEL_SIZE, padding=PADDING):
         super().__init__()
         
-        self.down_block = CNNBlock(input_channels,out_channels, kernel_size, padding, device)
+        self.down_block = CNNBlock(input_channels,out_channels, kernel_size, padding)
         self.maxpool = nn.MaxPool2d(kernel_size=POOL_TRANSPOSE_KERNEL_SIZE, stride=STRIDE)
 
     def forward(self, x):
@@ -80,12 +78,12 @@ class EncoderBlock(nn.Module):
 #     - Upsampling via: ConvTranspose 
 
 class DecoderBlock(nn.Module):
-    def __init__(self, input_channels, out_channels, kernel_size=KERNEL_SIZE, padding=PADDING, device=None):
+    def __init__(self, input_channels, out_channels, kernel_size=KERNEL_SIZE, padding=PADDING):
         super().__init__()
                 # out channels SAME cause - this output will be CONCAT w/ feature map >> double >> ...
-        self.up_conv = nn.ConvTranspose2d(in_channels=input_channels, out_channels=out_channels, kernel_size=POOL_TRANSPOSE_KERNEL_SIZE, stride=STRIDE, device=device)
+        self.up_conv = nn.ConvTranspose2d(in_channels=input_channels, out_channels=out_channels, kernel_size=POOL_TRANSPOSE_KERNEL_SIZE, stride=STRIDE)
         # input channels remain the same cause CONCAT >> 2xout_channels => input_channels again!
-        self.conv_block = CNNBlock(input_channels, out_channels, kernel_size, padding, device)
+        self.conv_block = CNNBlock(input_channels, out_channels, kernel_size, padding)
 
 # - Connecting paths
 #      - concatanation that's it just cat... meow
@@ -99,35 +97,35 @@ class DecoderBlock(nn.Module):
         return x
 
 class Simple_UNet(nn.Module):
-    def __init__(self, input_channels=1, kernel_size=KERNEL_SIZE, padding=PADDING, device=None):
+    def __init__(self, input_channels=1, kernel_size=KERNEL_SIZE, padding=PADDING):
         super().__init__()
 
         # Encoder / Down 
         # defaul start in: 1 then 16 > 32 > 64 > 128
         # DOUBLE out_channels every block!
-        self.encoder_block1 = EncoderBlock(input_channels,OUT_CHANNELS, device=device)
-        self.encoder_block2 = EncoderBlock(input_channels=OUT_CHANNELS, out_channels=OUT_CHANNELS*2, device=device)
-        self.encoder_block3 = EncoderBlock(input_channels=OUT_CHANNELS*2, out_channels=OUT_CHANNELS*4, device=device)
-        self.encoder_block4 = EncoderBlock(input_channels=OUT_CHANNELS*4, out_channels=OUT_CHANNELS*8, device=device)
+        self.encoder_block1 = EncoderBlock(input_channels,OUT_CHANNELS)
+        self.encoder_block2 = EncoderBlock(input_channels=OUT_CHANNELS, out_channels=OUT_CHANNELS*2)
+        self.encoder_block3 = EncoderBlock(input_channels=OUT_CHANNELS*2, out_channels=OUT_CHANNELS*4)
+        self.encoder_block4 = EncoderBlock(input_channels=OUT_CHANNELS*4, out_channels=OUT_CHANNELS*8)
 
         # Bridge
         # - Bottleneck / Bridge - no Pool
 #     - so regular ass convolution w/o pool - so just use CNNBlock class
         # in channels default - 128 > 256
-        self.bridge = CNNBlock(input_channels=OUT_CHANNELS*8, out_channels=OUT_CHANNELS*16, kernel_size=kernel_size, padding=padding, device=device)
+        self.bridge = CNNBlock(input_channels=OUT_CHANNELS*8, out_channels=OUT_CHANNELS*16, kernel_size=kernel_size, padding=padding)
 
         # Decoder / Up
         # start channel default 256 > 128 > 64 > 32 > 16
         # HALF start channel every block
-        self.decoder_block1 = DecoderBlock(input_channels=OUT_CHANNELS*16, out_channels=OUT_CHANNELS*8, device=device)
-        self.decoder_block2 = DecoderBlock(input_channels=OUT_CHANNELS*8, out_channels=OUT_CHANNELS*4, device=device)
-        self.decoder_block3 = DecoderBlock(input_channels=OUT_CHANNELS*4, out_channels=OUT_CHANNELS*2, device=device)
-        self.decoder_block4 = DecoderBlock(input_channels=OUT_CHANNELS*2, out_channels=OUT_CHANNELS, device=device)
+        self.decoder_block1 = DecoderBlock(input_channels=OUT_CHANNELS*16, out_channels=OUT_CHANNELS*8)
+        self.decoder_block2 = DecoderBlock(input_channels=OUT_CHANNELS*8, out_channels=OUT_CHANNELS*4)
+        self.decoder_block3 = DecoderBlock(input_channels=OUT_CHANNELS*4, out_channels=OUT_CHANNELS*2)
+        self.decoder_block4 = DecoderBlock(input_channels=OUT_CHANNELS*2, out_channels=OUT_CHANNELS)
 
         # Final Prediction layer
         # - OUT: convolution final time w/o w/ SIGMOID for binary image segmentation
         self.prediction = nn.Sequential(
-            nn.Conv2d(in_channels=OUT_CHANNELS, out_channels=1, kernel_size=(1,1),padding=PADDING, device=device),
+            nn.Conv2d(in_channels=OUT_CHANNELS, out_channels=1, kernel_size=(1,1),padding=PADDING),
             nn.Sigmoid()
         )
 
@@ -162,6 +160,8 @@ def training_epoch(model, device, loss_function, optimizer, train_loader):
 
     running_loss = 0.0
 
+    model.to(device)
+
     # I return thumbs and labels too but I actually don't care about it during training!
      # later TODO: - make monitoring by labels see which label is accessed how many times! - maybe graph distributions?
 
@@ -191,6 +191,8 @@ def training_epoch(model, device, loss_function, optimizer, train_loader):
 
 
 def val_epoch(model, device, loss_function, val_loader):
+    model.to(device)
+
     running_loss = 0.0
 
     # set model to eval!
