@@ -10,6 +10,7 @@ from torch import manual_seed, float32
 RANDOM_SEED = 42
 GENERATOR = manual_seed(RANDOM_SEED) # for reproducability leave it at that ! 
 IMAGE_SIZE = 160
+# commit msg.
 
 # ## Data Pipeline / Data preparation
 
