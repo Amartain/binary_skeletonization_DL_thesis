@@ -1,16 +1,15 @@
 # Stage 1
 from PIL import Image
-from torch.utils.data import Dataset, random_split, DataLoader
+from torch.utils.data import random_split, DataLoader
 from torchvision import transforms
 from torchvision.transforms import v2
-import os
 from torch import manual_seed, float32
 
 # Setup parameters
 RANDOM_SEED = 42
 GENERATOR = manual_seed(RANDOM_SEED) # for reproducability leave it at that ! 
 IMAGE_SIZE = 160
-# commit msg.
+
 
 # ## Data Pipeline / Data preparation
 
@@ -25,9 +24,6 @@ kimia216_original_dir = r"data\kimia216_dataset\Kimia216-Original"
 kimia216_gt_dir = r"data\kimia216_dataset\Kimia216-GT"
 kimia216_thumb_dir = r"data\kimia216_dataset\Kimia216-Thumb"
 
-# TODO: Make a function to visualize images - (loaded, transformed, outputs)
-# TODO: refactor old test code to use log [] lists instead of prints and only print 1x / stage! 
-# (started data laoding and stuff like that - THAT WE WANT TO SEE IMMEDIATELY!!!1
 
 # Helper functions
 
@@ -45,64 +41,7 @@ def clean_labels(jpg_filenames):
 # `__getitem__` : actually retrieving images - 1 at a time! 
 
 
-class Kimia(Dataset):
-    """
-    original_dir - path to directory with the original shapes - in jpg format - 
-    gt_dir - path to directory with the ground truth "labels" / images - in png format -
-    thumbs_dir - path to directory with the ground truths put onto to og shapes called "thumbs"
-    - in png format -
-    """
-   
-    def __init__(self, original_dir, gt_dir, thumbs_dir, transform=None):
-        self.original_dir = original_dir
-        self.gt_dir = gt_dir
-        self.thumbs_dir = thumbs_dir
-        self.transform = transform
-        
-        #TODO: make a function to fix label names that takes in a list and removes .jpg extension part fromm the end
-        self.labels = clean_labels(os.listdir(original_dir))
 
-    def __len__(self):
-        return len(self.labels)
-    
-    def __getitem__(self, idx): 
-        label = self.labels[idx]
-
-        original, gt, thumb, label = self.retrieve_image(label)
-
-        if self.transform is not None:
-            
-            original = self.transform(original)
-            gt = self.transform(gt)
-            thumb = self.transform(thumb)
-        #print(idx)
-
-        return original, gt, thumb, label
-    
-    def retrieve_image(self, label): # use label cause we have diff. names for each image!
-        """
-        returns 3 items  the original and ground truth images and seperately the thumbs image
-        unfort. the og. images are jpgs whilst the other 2 are pngs so we need sep...
-        """
-        #print(label)
-        jpg_filename = label + ".jpg"
-        png_filename = label + ".png"
-        original_path = os.path.join(self.original_dir, jpg_filename)
-        gt_path = os.path.join(self.gt_dir, png_filename)
-        thumb_path = os.path.join(self.thumbs_dir, png_filename)
-
-        # set mode to binary!!!
-        original = Image.open(original_path).convert(mode="1")
-        gt = Image.open(gt_path).convert(mode="1")
-        thumb = Image.open(thumb_path).convert(mode="1")
-
-        return original, gt, thumb, label
-    
-    def get_len(self):
-        return len(self.labels)
-
-    def get_labels(self):
-        return self.labels
 
 # ### Quality - Data Transformations
 
