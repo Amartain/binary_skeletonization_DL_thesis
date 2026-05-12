@@ -13,7 +13,7 @@ STRIDE = 2
 POOL_TRANSPOSE_KERNEL_SIZE = (2,2)
 KERNEL_SIZE = (3,3)
 PADDING = "same"
-OUT_CHANNELS = 16 # doubled w/ every down! this is where we start!!!!!
+OUT_CHANNELS = 32 # doubled w/ every down! this is where we start!!!!!
 device = None
 
 

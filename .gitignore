@@ -943,3 +943,13 @@ data/kimia99_dataset/Kimia99-Thumb/tool27.png
 data/kimia99_dataset/Kimia99-Thumb/tool38.png
 data/kimia99_dataset/Kimia99-Thumb/tool44.png
 data/kimia99_dataset/Kimia99-Thumb/whalesharks.png
+stage_2/tests/test_data_pipeline.py
+stage_2/tests/test_losses.py
+stage_2/tests/test_models.py
+stage_2/tests/test_traning.py
+stage_2/tests/test_vizual.py
+stage_2/tests/tests_data_pipeline.py
+stage_2/tests/tests_losses.py
+stage_2/tests/tests_models.py
+stage_2/tests/tests_traning.py
+stage_2/tests/tests_vizual.py

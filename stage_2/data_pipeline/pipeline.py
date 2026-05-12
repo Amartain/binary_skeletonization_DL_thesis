@@ -1,9 +1,9 @@
 # Stage 1
-from PIL import Image
 from torch.utils.data import random_split, DataLoader
 from torchvision import transforms
 from torchvision.transforms import v2
 from torch import manual_seed, float32
+from data_pipeline.datasets.Kimia import Kimia
 
 # Setup parameters
 RANDOM_SEED = 42
@@ -26,11 +26,6 @@ kimia216_thumb_dir = r"data\kimia216_dataset\Kimia216-Thumb"
 
 
 # Helper functions
-
-def clean_labels(jpg_filenames):
-    labels = [filename.replace(".jpg", "") for filename in jpg_filenames]
-
-    return labels
 
 
 # ### Access

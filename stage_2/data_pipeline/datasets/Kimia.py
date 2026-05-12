@@ -1,7 +1,7 @@
 from torch.utils.data import Dataset
 import os
 from PIL import Image
-from pipeline import clean_labels
+from data_pipeline.data_utils import clean_labels
 
 
 class Kimia(Dataset):

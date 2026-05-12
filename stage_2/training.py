@@ -1,11 +1,10 @@
 from torch import nn, optim
 from torch.utils.data import DataLoader
 import torch
-from simple_u_net_model import Simple_UNet
+from models.UNet import UNet
 from data_pipeline.pipeline import get_train_test_val_loaders
-from stage1_tests import get_single_image_tensor_from_loader, test_show_image
 from segmentation_models_pytorch import losses
-
+from models.ResidualAttentionUNet import Residual_Attention_UNet
 
 
 TEST_MODE = True
@@ -30,7 +29,7 @@ KIMIA216 = 2
 # Model setup - see in the model code!
 
 # Training Setup 
-NO_EPOCHS = 1000
+NO_EPOCHS = 200
 LR_RATE = 1e-4 # setup for Adam!
 WEIGHT_DECAY = 1e-2 # set to 0 for stage 1!
 
@@ -173,14 +172,15 @@ def visualize_results(model, val_loader):
 
     print("after pred[0].squeeze()", pred.size(), pred.unique())
 
-    test_show_image(image)
-    test_show_image(pred)
+    #test_show_image(image)
+    #test_show_image(pred)
 
 # TRAINING Setup
 # TODO: model.to(device) implementation instead!!!!!!
 
 print("0. INIT MODEL")
-model = Simple_UNet()
+#model = UNet()
+model = Residual_Attention_UNet(residual=False, attention=True)
 model.to(device)
 
 print("1. Setting up Loss & optims")
@@ -203,7 +203,7 @@ trained_model, train_losses, val_losses = train_model(model, device, optimizer, 
 
 print("VISUALIZE RESULTS")
 print("-"*80)
-visualize_results(trained_model, val_loader)
+#visualize_results(trained_model, val_loader)
 
 
 

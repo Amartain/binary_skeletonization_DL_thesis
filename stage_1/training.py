@@ -28,7 +28,7 @@ KIMIA216 = 2
 # Model setup - see in the model code!
 
 # Training Setup 
-NO_EPOCHS = 1000
+NO_EPOCHS = 300
 LR_RATE = 1e-4 # setup for Adam!
 WEIGHT_DECAY = 1e-2 # set to 0 for stage 1!
 

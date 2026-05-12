@@ -28,3 +28,13 @@
 
 
 # -. TESTs / func / file / module
+
+
+# TODO:
+[ ] setup tensorboard
+[ ] setup Sphinx for documentation
++ of course
+[ ] attention gates
+and
+[ ] import & use and train w/ loss functions do all experiments
+[ ] import & use metrics
