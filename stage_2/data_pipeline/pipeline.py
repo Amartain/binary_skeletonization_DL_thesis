@@ -6,8 +6,7 @@ from torch import manual_seed, float32
 from data_pipeline.datasets.Kimia import Kimia
 
 # Setup parameters
-RANDOM_SEED = 42
-GENERATOR = manual_seed(RANDOM_SEED) # for reproducability leave it at that ! 
+RANDOM_SEED = 42 # for reproducability leave it at that ! 
 IMAGE_SIZE = 160
 
 
@@ -74,8 +73,8 @@ def train_val_test_split(dataset, test_friction=0.15, val_friction=0.15):
     test_len = int(len(dataset) * test_friction)
     train_len = len(dataset) - val_len - test_len
     
-
-    train_dataset, val_dataset, test_dataset = random_split(dataset=dataset, lengths=[train_len, val_len, test_len], generator=GENERATOR)
+    generator = manual_seed(RANDOM_SEED)
+    train_dataset, val_dataset, test_dataset = random_split(dataset=dataset, lengths=[train_len, val_len, test_len], generator=generator)
 
     return train_dataset, val_dataset, test_dataset
 
@@ -97,7 +96,9 @@ def get_train_test_val_loaders(dataset_no, batch_size):
 
     train_dataset, val_dataset, test_dataset = train_val_test_split(dataset=dataset)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, generator=GENERATOR)
+
+    generator = manual_seed(RANDOM_SEED)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, generator=generator)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False) 
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)  
 

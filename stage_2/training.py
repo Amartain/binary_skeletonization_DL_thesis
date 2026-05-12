@@ -1,44 +1,64 @@
 from torch import nn, optim
 from torch.utils.data import DataLoader
 import torch
+from torch.utils.tensorboard import SummaryWriter
 from models.UNet import UNet
 from data_pipeline.pipeline import get_train_test_val_loaders
-from segmentation_models_pytorch import losses
+from segmentation_models_pytorch import losses, metrics
 from models.ResidualAttentionUNet import Residual_Attention_UNet
+import torchvision
 
+
+print(torch.__version__)
+
+import torch
+print(f"PyTorch version: {torch.__version__}")
+print(f"CUDA available: {torch.cuda.is_available()}")
+print(f"CUDA version PyTorch was built with: {torch.version.cuda}")
+if torch.cuda.is_available():
+    print(f"Current device: {torch.cuda.get_device_name(0)}")
+else:
+    import os
+    print(f"CUDA_VISIBLE_DEVICES: {os.environ.get('CUDA_VISIBLE_DEVICES')}")
 
 TEST_MODE = True
 
 # Setup
 RANDOM_SEED = 42
 generator = torch.manual_seed(RANDOM_SEED)
-ALPHA = 0.1
-BETA = 0.9 # 0.8 worked last time...
+ALPHA = 0.3
+BETA = 0.7 # 0.8 worked last time... - (0.2-4, 0.7-0.8) works well higher and model looses confidence + starts breaking lines
+# alpha, beta chosen 0.3 and 0.7 weights for simplicity
+abs = [(0.3, 0.7)] #
 
 print(ALPHA,"* BCE", BETA, "* DICE")
 
 # device setup
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-print("Cuda") if device == "cuda" else print("Training on CPU")
+print("Cuda") if device == "cuda" else print(device)
 
 # Data
 BATCH_SIZE = 32
 KIMIA99 = 1
 KIMIA216 = 2
+batch_sizes = [16]
 # Model setup - see in the model code!
 
 # Training Setup 
-NO_EPOCHS = 200
+NO_EPOCHS = 300
 LR_RATE = 1e-4 # setup for Adam!
-WEIGHT_DECAY = 1e-2 # set to 0 for stage 1!
+WEIGHT_DECAY = 1e-2 # set to default for baseline
 
+# TensorBoard
+step = 0
+FULL_PATH_TO_LOGDIR = f"runs\\UNet\\Kimia99\\ComboLoss_Baseline_300EPOCHS"
 
-
-
-def training_epoch(model, device, loss_function, optimizer, train_loader):
+def training_epoch(model, device, loss_function, optimizer, train_loader, alpha=ALPHA, beta=BETA):
     epoch_loss = 0
-    Dice_loss, BCE_loss = loss_function
+    
+    if type(loss_function) == tuple:
+        Dice_loss, BCE_loss = loss_function
 
     # prev. epoch ends w/ .eval() mode because of the validation epoch so reset
     model.train()
@@ -48,6 +68,11 @@ def training_epoch(model, device, loss_function, optimizer, train_loader):
     # I return thumbs and labels too but I actually don't care about it during training!
      # later TODO: - make monitoring by labels see which label is accessed how many times! - maybe graph distributions?
     y_distr = []
+    running_f1 = 0.0
+    
+    # used for passing up first batch for visualization!
+    batch_count = 0
+    first_batch = None
 
     for originals, skeletons, *_ in train_loader:
         # data setup
@@ -68,16 +93,29 @@ def training_epoch(model, device, loss_function, optimizer, train_loader):
       #  print("X shape", x.size())
 
         output = model(x)
-      #  print("OUTPUT SHAPE: ", output.size())
+
 
         # backward pass
-        BCE_loss_ = ALPHA * BCE_loss(output, y)
-        Dice_loss_ = BETA * Dice_loss(output,y)
-        loss = BCE_loss_ + Dice_loss_
+        if type(loss_function) == tuple:
+            BCE_loss_ = alpha * BCE_loss(output, y)
+            Dice_loss_ = beta * Dice_loss(output,y)
+            loss = BCE_loss_ + Dice_loss_
+        else: loss = loss_function(output, y)
 
-      #  print("loss SHAPE: ", loss.size())
+      # metrics & for tensorboard
+        if batch_count == 0:
+            first_batch = (
+               originals.cpu(),
+               skeletons.cpu(),
+               output.detach().cpu()
+            )
 
-
+        # calculating f1 score for the batch
+        target = y.round().long()
+        tp, fp, fn, tn = metrics.get_stats(output, target, mode='binary', threshold=0.5)
+        f1 = metrics.f1_score(tp, fp, fn, tn, reduction='micro').item()
+        running_f1 += f1 * len(x)
+        
         loss.backward()
 
         optimizer.step()
@@ -85,17 +123,23 @@ def training_epoch(model, device, loss_function, optimizer, train_loader):
         # Accumulative LOSS
         running_loss += loss.item() * len(x) # avarage out w/ batch_size to ensure same weight for all
 
+        batch_count += 1
+
     epoch_loss = running_loss / len(train_loader.dataset)
-    #print("Y distribution: ", y_distr)
+    epoch_f1 = running_f1 / len(train_loader.dataset)
 
-    return epoch_loss
+    return epoch_loss, epoch_f1, first_batch
 
-
-def val_epoch(model, device, loss_function, val_loader):
+def val_epoch(model, device, loss_function, val_loader, alpha=ALPHA, beta=BETA):
     running_loss = 0.0
-
+    running_f1 = 0.0
+    batch_count = 0
     # set model to eval!
     model.eval()
+
+
+    if type(loss_function) == tuple:
+        BCE_loss, Dice_loss = loss_function
 
     # no need for grad.
     with torch.no_grad():
@@ -106,105 +150,135 @@ def val_epoch(model, device, loss_function, val_loader):
 
             output = model(x)
 
-            BCE_loss_ = ALPHA * BCE_loss(output, y)
-            Dice_loss_ = BETA * Dice_loss(output,y)
-            loss = BCE_loss_ + Dice_loss_
+            if type(loss_function) == tuple:
+                BCE_loss_ = alpha * BCE_loss(output, y)
+                Dice_loss_ = beta * Dice_loss(output,y)
+                loss = BCE_loss_ + Dice_loss_
+            else: loss = loss_function(output, y)
+
+                  # metrics & for tensorboard
+            if batch_count == 0:
+                first_batch = (
+                originals.cpu(),
+                skeletons.cpu(),
+                output.detach().cpu()
+                )
+
+            # calculating batch f1 score
+            target = y.round().long()
+            tp, fp, fn, tn = metrics.get_stats(output, target, mode='binary', threshold=0.5)
+            f1 = metrics.f1_score(tp, fp, fn, tn, reduction='micro').item()
+            running_f1 += f1 * len(x)
 
 
             running_loss += loss.item() * len(x)
 
 
     epoch_val_loss = running_loss / len(val_loader.dataset)
+    epoch_f1 = running_f1 / len(val_loader.dataset)
 
-    return epoch_val_loss
 
-def train_model(model, device,  optimizer, train_loader, val_loader, loss_function):
+    return epoch_val_loss, epoch_f1, first_batch
+
+def make_image_grid(image_batch):
+    """
+    image_batch - tuple (original image, ground_truth_image, model_output) ON CPU already!
+    """
+    imgs, gt_imgs, ypreds = image_batch
+    
+    cat_images = torch.cat((imgs, gt_imgs, ypreds), dim=3)
+    
+    return torchvision.utils.make_grid(cat_images, nrow=1)
+    
+
+
+def train_model(model, device,  optimizer, train_loader, val_loader, loss_function, alpha=ALPHA, beta=BETA, batch_size=BATCH_SIZE):
     train_losses = []
     val_losses = []
+    step = 0
+
+    tb_writer = SummaryWriter(f"{FULL_PATH_TO_LOGDIR}\\{batch_size}ALPHA{alpha}BETA{beta}")
+
+    image, *_ = next(iter(train_loader))
+    image = image.to(device)
+
+    tb_writer.add_graph(model, image)
+
     for epoch in range(NO_EPOCHS):
-        print("STARTING Epoch ", epoch, "/", NO_EPOCHS)
+        
 
-        epoch_train_loss = training_epoch(model, device, loss_function, optimizer, train_loader)
-        epoch_val_loss = val_epoch(model,device, loss_function, val_loader)
+        epoch_train_loss, epoch_train_f1_acc, train_1st_batch = training_epoch(model, device, loss_function, optimizer, train_loader, alpha, beta)
+        epoch_val_loss, epoch_val_f1_acc, val_1st_batch = val_epoch(model,device, loss_function, val_loader, alpha, beta)
 
-        print("Training Loss: ", epoch_train_loss)
-        print("Validation Loss: ", epoch_val_loss)
-        print("-"*80)
+        if epoch % 25 == 0 or (epoch+1) == NO_EPOCHS:
+            print("Epoch ", epoch, "/", NO_EPOCHS)
+            print("Training Loss: ", epoch_train_loss)
+            print("Validation Loss: ", epoch_val_loss)
+            print("/"*80)
+            print("Training Accuracy (F1)", epoch_train_f1_acc)
+            print("Validation Accuracy (F1)", epoch_val_f1_acc)
+            print("_"*80)
+
+            # visual stuff to tensorboard
+            tb_writer.add_image("Training", make_image_grid(train_1st_batch), global_step=step)
+            tb_writer.add_image("Validation", make_image_grid(val_1st_batch), global_step=step)
+            
 
         train_losses.append(epoch_train_loss)
         val_losses.append(epoch_val_loss)
+
+        # TensorBoard
+        tb_writer.add_scalars("Train vs Validation Loss", {"Training Loss": epoch_train_loss, "Validation Loss": epoch_val_loss}, global_step=step)
+        tb_writer.add_scalars("Training vs Validation ACCURACY (F1)", {"Training Acc":epoch_train_f1_acc, "Validation Accuracy":epoch_val_f1_acc}, global_step=step)
+        tb_writer.add_hparams({"alpha":alpha, "beta":beta, "batch_size":batch_size}, {"Training loss":epoch_train_loss, "Validation Loss":epoch_val_loss, "Training Accuracy F1":epoch_train_f1_acc,"Validation Accuracy F1":epoch_val_f1_acc}, global_step=step)
+
+        
+
+
+        step += 1
     
 
     print("Training finished")
     # I wanna plot this later
     return model, train_losses, val_losses
 
-def visualize_results(model, val_loader):
-    image, skeleton, thumbs, label = next(iter(val_loader))
-
-   # move input to device the model dwells on
-    image = image.to(device)
-
-    model.eval()
-    pred = model(image)
-
-    print("Prediction mean", pred.mean(), "Prediction median", pred.median(), "highest pred. ", pred.max(), "Pred min.", pred.min())
-    print("Unique prediction", pred.unique())
-    # transitioning it to 1s and zeroes by masking
-    pred_mask = pred < 0.5 # because I wanna have white for skel. black for background like og. image
-    # converting to [0., 1.] image!
-    pred = pred_mask.to(torch.float32)
-    
-    print(pred.unique())
-
-
-    # moving back to CPU for visualization & detaching from grads.
-    image = image.to("cpu")
-    
-    pred = pred.detach()
-    print("after detach()", pred.unique())
-    pred = pred.to("cpu")
-    print("after 2 cpu", pred.unique())
-
-    # select an image & sqeeze down so batch dimension is gone!
-    image = image[0].squeeze()
-    pred = pred[0].squeeze()
-
-    print("after pred[0].squeeze()", pred.size(), pred.unique())
-
-    #test_show_image(image)
-    #test_show_image(pred)
-
 # TRAINING Setup
 # TODO: model.to(device) implementation instead!!!!!!
+def train(batch_size=BATCH_SIZE, lr=LR_RATE, weight_decay = WEIGHT_DECAY):
+    for alpha, beta in abs:
+            print("0. INIT MODEL")
+            torch.manual_seed(RANDOM_SEED) #need for reproducibility - weight init.
+            model = UNet()
+            #model = Residual_Attention_UNet(residual=False, attention=True)
+            model.to(device)
 
-print("0. INIT MODEL")
-#model = UNet()
-model = Residual_Attention_UNet(residual=False, attention=True)
-model.to(device)
-
-print("1. Setting up Loss & optims")
-BCE_loss = nn.BCELoss() # this isn't ideal / good because of HUGE class imbalance but this was just first step to test!
-# smooth  aka. like gamma in Focal loss to account even more for class imbalance
-Dice_loss = losses.DiceLoss('binary', from_logits=False)
-
-
-# for some reason Adam didn't really seem to work - no learning vs... 0.09 both on val and training dataset!
-optimizer = optim.AdamW(model.parameters(), lr=LR_RATE, weight_decay=WEIGHT_DECAY) 
-# optimizer = optim.SGD(model.parameters(), lr=LR_RATE, weight_decay=WEIGHT_DECAY)
-
-# data
-print("2. Setting up DATALOADERs")
-train_loader, val_loader, test_loader = get_train_test_val_loaders(KIMIA99, BATCH_SIZE)
-
-print("3. STARTING TRAINING")
-print("_"*80)
-trained_model, train_losses, val_losses = train_model(model, device, optimizer, train_loader, val_loader, loss_function=(Dice_loss, BCE_loss))
-
-print("VISUALIZE RESULTS")
-print("-"*80)
-#visualize_results(trained_model, val_loader)
+            print("1. Setting up Loss & optims")
+            BCE_loss = nn.BCELoss() # this isn't ideal / good because of HUGE class imbalance but this was just first step to test!
+            # smooth  aka. like gamma in Focal loss to account even more for class imbalance
+            Dice_loss = losses.DiceLoss('binary', from_logits=False)
 
 
+            # for some reason Adam didn't really seem to work - no learning vs... 0.09 both on val and training dataset!
+            optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay) 
+            # optimizer = optim.SGD(model.parameters(), lr=LR_RATE, weight_decay=WEIGHT_DECAY)
 
+            # data
+            print("2. Setting up DATALOADERs")
+            train_loader, val_loader, test_loader = get_train_test_val_loaders(KIMIA99, batch_size)
+
+            print("3. STARTING TRAINING")
+            print("_"*80)
+            trained_model, train_losses, val_losses = train_model(model, device, optimizer, train_loader, val_loader, loss_function=(BCE_loss, Dice_loss), alpha=alpha, beta=beta, batch_size=batch_size)
+
+            print("VISUALIZE RESULTS")
+            print("-"*80)
+            #visualize_results(trained_model, val_loader)
+
+            
+t = 0
+
+for batch_size in batch_sizes:
+    print("TRAIN no.", t)
+    train(batch_size)
+    t += 1
 
